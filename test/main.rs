@@ -4,7 +4,7 @@ mod graph;
 mod routing_handler;
 
 fn main() {
-    let mut routing = routing_handler::RoutinHandler::new();
+    let mut routing = routing_handler::RoutingHandler::new();
     let flood = FloodResponse {
         flood_id: 0,
         path_trace: vec![

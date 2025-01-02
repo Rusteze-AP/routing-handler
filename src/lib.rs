@@ -1,5 +1,5 @@
-mod routing_handler;
 mod graph;
+mod routing_handler;
 
-pub use routing_handler::*;
 pub use graph::*;
+pub use routing_handler::*;

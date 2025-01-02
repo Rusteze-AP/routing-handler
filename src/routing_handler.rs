@@ -6,14 +6,14 @@ use wg_internal::{
     packet::FloodResponse,
 };
 
-pub struct RoutinHandler {
+pub struct RoutingHandler {
     graph: Graph,
     pdr: HashMap<NodeId, (u64, u64)>,
     congestion: HashMap<NodeId, u64>,
     logger: Logger,
 }
 
-impl RoutinHandler {
+impl RoutingHandler {
     pub fn new() -> Self {
         Self {
             graph: Graph::new(),
