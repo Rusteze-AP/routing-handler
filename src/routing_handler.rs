@@ -38,7 +38,7 @@ impl RoutingHandler {
             prev_node = *id;
         }
         self.logger
-            .log_debug(format!("GRAPH: {:?}", self.graph).as_str());
+            .log_debug(format!("GRAPH: {:?}", self.graph).as_str()); 
     }
 
     pub fn node_ack(&mut self, id: NodeId) {

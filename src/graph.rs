@@ -10,7 +10,7 @@ const WEIGHT_FACTOR: f32 = 1.0;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
-    pub node_type: NodeType,
+    pub node_type: NodeType, 
     pub congestion: f32,
     pub pdr: f32,
     pub predictions: HashMap<NodeId, f32>,
