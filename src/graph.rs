@@ -10,7 +10,7 @@ const WEIGHT_FACTOR: f32 = 1.0;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
-    pub node_type: NodeType, 
+    pub node_type: NodeType,
     pub congestion: f32,
     pub pdr: f32,
     pub predictions: HashMap<NodeId, f32>,
@@ -63,7 +63,7 @@ impl PartialOrd for AStarNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Graph {
     nodes: HashMap<NodeId, Node>,
     graph: HashMap<NodeId, HashSet<NodeId>>,
@@ -75,6 +75,12 @@ impl Graph {
             nodes: HashMap::new(),
             graph: HashMap::new(),
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.graph.clear();
+        
     }
 
     pub fn add_node(&mut self, id: NodeId, node_type: NodeType) {
@@ -89,23 +95,30 @@ impl Graph {
         self.graph.entry(n2).or_insert_with(HashSet::new).insert(n1);
     }
 
-    pub fn update_congestion(&mut self, id: NodeId, congestion: f32) {
+    pub fn get_node_weight(&self, id: NodeId) -> (f32,f32) {
+        if let Some(node) = self.nodes.get(&id) {
+            return (node.pdr, node.congestion);
+        }
+        (0.0,0.0)
+    }
+
+    pub fn update_node_weight(&mut self, id: NodeId, weight: (f32,f32)) {
+        if let Some(node) = self.nodes.get_mut(&id) {
+            node.pdr = weight.0;
+            node.congestion = weight.1;
+        }
+    }
+
+    pub fn update_node_congestion(&mut self, id: NodeId, congestion: f32) {
         if let Some(node) = self.nodes.get_mut(&id) {
             node.update_congestion(congestion);
         }
     }
 
-    pub fn update_pdr(&mut self, id: NodeId, pdr: f32) {
+    pub fn update_node_pdr(&mut self, id: NodeId, pdr: f32) {
         if let Some(node) = self.nodes.get_mut(&id) {
             node.update_pdr(pdr);
         }
-    }
-
-    pub fn get_weight(&self, id: NodeId) -> Option<f32> {
-        if let Some(node) = self.nodes.get(&id) {
-            return Some(node.get_weight());
-        }
-        None
     }
 
     pub fn a_star_search(
@@ -151,6 +164,9 @@ impl Graph {
             }
 
             for neighbor in self.graph[&current.id].iter() {
+                if self.nodes[neighbor].node_type != NodeType::Drone && *neighbor != end {
+                    continue;
+                }
                 let tentative_g_score = g_score[&current.id] + self.nodes[neighbor].get_weight();
                 if tentative_g_score < *g_score.get(neighbor).unwrap_or(&f32::INFINITY) {
                     came_from.insert(*neighbor, current.id);
@@ -204,6 +220,7 @@ impl Graph {
                 .insert(end, weight);
         }
         total_path.reverse();
+        total_path.hop_index = 1;
         total_path
     }
 }
