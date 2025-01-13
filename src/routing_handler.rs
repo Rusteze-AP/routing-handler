@@ -27,6 +27,12 @@ impl RoutingHandler {
         }
     }
 
+    /// Update the graph with the new flood response
+    /// 
+    /// Description:
+    /// 
+    /// The function create and update the graph with the fllod response.
+    /// If the flood id is different from the current flood id a new graph is created with the old weights.
     pub fn update_graph(&mut self, flood: FloodResponse) {
         if self.current_flood_id != flood.flood_id {
             self.old_graph = self.graph.clone();
@@ -54,18 +60,25 @@ impl RoutingHandler {
             .log_debug(format!("GRAPH: {:?}", self.graph).as_str()); 
     }
 
+    /// Increase the ack counter of the node for the pdr calculation
     pub fn node_ack(&mut self, id: NodeId) {
         let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
         *ack += 1;
         self.graph.update_node_pdr(id, (*ack / *nack) as f32);
     }
 
+    /// Increase the nack counter of the node for the pdr calculation
     pub fn node_nack(&mut self, id: NodeId) {
         let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
         *nack += 1;
         self.graph.update_node_pdr(id, (*ack / *nack) as f32);
     }
 
+    /// Update the congestion of the nodes based on the SourceRoutingHeader
+    /// 
+    /// Description:
+    /// 
+    /// The congestion of the nodes is the normalized number of times a nodes received a packet.
     pub fn nodes_congestion(&mut self, header: SourceRoutingHeader) {
         for id in header.hops.iter() {
             let congestion = self.congestion.entry(*id).or_insert(0);
@@ -78,6 +91,11 @@ impl RoutingHandler {
         }
     }
 
+    /// Get the best path from the start node to the end node with the a* algorithm
+    /// 
+    /// Description:
+    /// 
+    /// The weight of the nodes is calculated with the pdr and congestion values.
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
             Ok(header) => {
@@ -93,13 +111,4 @@ impl RoutingHandler {
         }
     }
 
-    // //TODO: remove these functions
-    // // test only
-    // pub fn update_congestion(&mut self, id: NodeId, congestion: f32) {
-    //     self.graph.update_congestion(id, congestion);
-    // }
-    // // test only
-    // pub fn update_pdr(&mut self, id: NodeId, pdr: f32) {
-    //     self.graph.update_pdr(id, pdr);
-    // }
 }
