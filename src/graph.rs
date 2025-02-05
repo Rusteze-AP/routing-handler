@@ -65,8 +65,8 @@ impl PartialOrd for AStarNode {
 
 #[derive(Debug, Clone)]
 pub struct Graph {
-    nodes: HashMap<NodeId, Node>,
-    graph: HashMap<NodeId, HashSet<NodeId>>,
+    pub nodes: HashMap<NodeId, Node>,
+    pub graph: HashMap<NodeId, HashSet<NodeId>>,
 }
 
 impl Graph {
@@ -97,6 +97,7 @@ impl Graph {
 
     pub fn get_node_weight(&self, id: NodeId) -> (f32,f32) {
         if let Some(node) = self.nodes.get(&id) {
+            println!("get node weight: {:?}", node);
             return (node.pdr, node.congestion);
         }
         (0.0,0.0)

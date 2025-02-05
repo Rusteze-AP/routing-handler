@@ -1,5 +1,4 @@
 use crate::graph::Graph;
-use logger::{LogLevel, Logger};
 use std::{collections::HashMap, u64};
 use wg_internal::{
     network::{NodeId, SourceRoutingHeader},
@@ -12,7 +11,6 @@ pub struct RoutingHandler {
     current_flood_id: u64,
     pdr: HashMap<NodeId, u64>,
     congestion: HashMap<NodeId, u64>,
-    logger: Logger,
 }
 
 impl RoutingHandler {
@@ -23,7 +21,6 @@ impl RoutingHandler {
             current_flood_id: u64::MAX,
             pdr: HashMap::new(),
             congestion: HashMap::new(),
-            logger: Logger::new(LogLevel::All as u8, false, "RoutingHandler".to_string()),
         }
     }
 
@@ -56,15 +53,13 @@ impl RoutingHandler {
             }
             prev_node = *id;
         }
-        self.logger
-            .log_debug(format!("GRAPH: {:?}", self.graph).as_str()); 
     }
 
     /// Increase the nack counter of the node for the pdr calculation
     pub fn node_nack(&mut self, id: NodeId) {
-        let nack = self.pdr.entry(id).or_insert(0);
+        let nack: &mut u64 = self.pdr.entry(id).or_insert(0);
         *nack += 1;
-        self.graph.update_node_pdr(id, (1 / *nack) as f32);
+        self.graph.update_node_pdr(id, 1.0 as f32 - (1.0 as f32 / *nack as f32) as f32);
     }
 
     /// Update the congestion of the nodes based on the SourceRoutingHeader
@@ -82,8 +77,7 @@ impl RoutingHandler {
         }
         let max = *self.congestion.values().max().unwrap();
         for (key, value) in self.congestion.iter_mut() {
-            *value = *value / max;
-            self.graph.update_node_congestion(*key, *value as f32);
+            self.graph.update_node_congestion(*key, *value as f32 / max as f32);
         }
     }
 
@@ -95,13 +89,9 @@ impl RoutingHandler {
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
             Ok(header) => {
-                self.logger.log_debug(
-                    format!("Best path from {} to {} is {:?}", start, end, header).as_str(),
-                );
                 Some(header)
             }
             Err(e) => {
-                self.logger.log_error(e.as_str());
                 None
             }
         }
