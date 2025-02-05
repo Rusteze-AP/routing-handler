@@ -10,7 +10,7 @@ pub struct RoutingHandler {
     graph: Graph,
     old_graph: Graph,
     current_flood_id: u64,
-    pdr: HashMap<NodeId, (u64, u64)>,
+    pdr: HashMap<NodeId, u64>,
     congestion: HashMap<NodeId, u64>,
     logger: Logger,
 }
@@ -60,18 +60,11 @@ impl RoutingHandler {
             .log_debug(format!("GRAPH: {:?}", self.graph).as_str()); 
     }
 
-    /// Increase the ack counter of the node for the pdr calculation
-    pub fn node_ack(&mut self, id: NodeId) {
-        let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
-        *ack += 1;
-        self.graph.update_node_pdr(id, (*ack / *nack) as f32);
-    }
-
     /// Increase the nack counter of the node for the pdr calculation
     pub fn node_nack(&mut self, id: NodeId) {
-        let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
+        let nack = self.pdr.entry(id).or_insert(0);
         *nack += 1;
-        self.graph.update_node_pdr(id, (*ack / *nack) as f32);
+        self.graph.update_node_pdr(id, (1 / *nack) as f32);
     }
 
     /// Update the congestion of the nodes based on the SourceRoutingHeader
