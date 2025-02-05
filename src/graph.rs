@@ -97,7 +97,6 @@ impl Graph {
 
     pub fn get_node_weight(&self, id: NodeId) -> (f32,f32) {
         if let Some(node) = self.nodes.get(&id) {
-            println!("get node weight: {:?}", node);
             return (node.pdr, node.congestion);
         }
         (0.0,0.0)

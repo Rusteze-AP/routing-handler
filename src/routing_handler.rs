@@ -9,7 +9,8 @@ pub struct RoutingHandler {
     graph: Graph,
     old_graph: Graph,
     current_flood_id: u64,
-    pdr: HashMap<NodeId, u64>,
+    // ack, nack
+    pdr: HashMap<NodeId, (u64, u64)>,
     congestion: HashMap<NodeId, u64>,
 }
 
@@ -25,9 +26,9 @@ impl RoutingHandler {
     }
 
     /// Update the graph with the new flood response
-    /// 
+    ///
     /// Description:
-    /// 
+    ///
     /// The function create and update the graph with the fllod response.
     /// If the flood id is different from the current flood id a new graph is created with the old weights.
     pub fn update_graph(&mut self, flood: FloodResponse) {
@@ -42,11 +43,11 @@ impl RoutingHandler {
         }
         let (mut prev_node, _) = prev_node.unwrap();
 
-
         for (id, node_type) in flood.path_trace.iter() {
             self.graph.add_node(*id, *node_type);
-            if self.graph.get_node_weight(*id) != (0.0,0.0){
-                self.graph.update_node_weight(*id, self.old_graph.get_node_weight(*id));
+            if self.graph.get_node_weight(*id) != (0.0, 0.0) {
+                self.graph
+                    .update_node_weight(*id, self.old_graph.get_node_weight(*id));
             }
             if *id != prev_node {
                 self.graph.add_edge(*id, prev_node);
@@ -57,15 +58,28 @@ impl RoutingHandler {
 
     /// Increase the nack counter of the node for the pdr calculation
     pub fn node_nack(&mut self, id: NodeId) {
-        let nack: &mut u64 = self.pdr.entry(id).or_insert(0);
+        let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
         *nack += 1;
-        self.graph.update_node_pdr(id, 1.0 as f32 - (1.0 as f32 / *nack as f32) as f32);
+        self.graph
+            .update_node_pdr(id, *nack as f32 / (*ack as f32 + *nack as f32) as f32);
+    }
+
+    pub fn nodes_ack(&mut self, header: SourceRoutingHeader) {
+        if header.hops.is_empty() {
+            return;
+        }
+        for id in header.hops.iter() {
+            let (ack, nack) = self.pdr.entry(*id).or_insert((0, 0));
+            *ack += 1;
+            self.graph
+            .update_node_pdr(*id, *nack as f32 / (*ack as f32 + *nack as f32) as f32);
+        }
     }
 
     /// Update the congestion of the nodes based on the SourceRoutingHeader
-    /// 
+    ///
     /// Description:
-    /// 
+    ///
     /// The congestion of the nodes is the normalized number of times a nodes received a packet.
     pub fn nodes_congestion(&mut self, header: SourceRoutingHeader) {
         if header.hops.is_empty() {
@@ -77,24 +91,20 @@ impl RoutingHandler {
         }
         let max = *self.congestion.values().max().unwrap();
         for (key, value) in self.congestion.iter_mut() {
-            self.graph.update_node_congestion(*key, *value as f32 / max as f32);
+            self.graph
+                .update_node_congestion(*key, *value as f32 / max as f32);
         }
     }
 
     /// Get the best path from the start node to the end node with the a* algorithm
-    /// 
+    ///
     /// Description:
-    /// 
+    ///
     /// The weight of the nodes is calculated with the pdr and congestion values.
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
-            Ok(header) => {
-                Some(header)
-            }
-            Err(e) => {
-                None
-            }
+            Ok(header) => Some(header),
+            Err(e) => None,
         }
     }
-
 }
