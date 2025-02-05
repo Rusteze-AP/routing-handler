@@ -73,6 +73,9 @@ impl RoutingHandler {
     /// 
     /// The congestion of the nodes is the normalized number of times a nodes received a packet.
     pub fn nodes_congestion(&mut self, header: SourceRoutingHeader) {
+        if header.hops.is_empty() {
+            return;
+        }
         for id in header.hops.iter() {
             let congestion = self.congestion.entry(*id).or_insert(0);
             *congestion += 1;
