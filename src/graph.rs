@@ -36,7 +36,7 @@ impl Node {
 
     pub fn get_weight(&self) -> f32 {
         WEIGHT_FACTOR
-            / ((1.0 - self.pdr) * PDR_WEIGHT + (1.0 - self.congestion) * CONGESTION_WEIGHT)
+            / ((1.1 - self.pdr) * PDR_WEIGHT + (1.1 - self.congestion) * CONGESTION_WEIGHT)
     }
 }
 
@@ -164,7 +164,7 @@ impl Graph {
             }
 
             for neighbor in self.graph[&current.id].iter() {
-                if self.nodes[neighbor].node_type != NodeType::Drone && *neighbor != end {
+                if *neighbor != end && self.nodes[neighbor].node_type != NodeType::Drone  {
                     continue;
                 }
                 let tentative_g_score = g_score[&current.id] + self.nodes[neighbor].get_weight();
@@ -190,7 +190,7 @@ impl Graph {
         if let Some(value) = self.nodes.get(&current).unwrap().predictions.get(&end) {
             return *value;
         }
-        0.0
+        0.1
     }
 
     fn reconstruct_path(

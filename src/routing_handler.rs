@@ -10,8 +10,8 @@ pub struct RoutingHandler {
     old_graph: Graph,
     current_flood_id: u64,
     // ack, nack
-    pdr: HashMap<NodeId, (u64, u64)>,
-    congestion: HashMap<NodeId, u64>,
+    pdr: HashMap<NodeId, (f32, f32)>,
+    congestion: HashMap<NodeId, f32>,
 }
 
 impl RoutingHandler {
@@ -58,10 +58,9 @@ impl RoutingHandler {
 
     /// Increase the nack counter of the node for the pdr calculation
     pub fn node_nack(&mut self, id: NodeId) {
-        let (ack, nack) = self.pdr.entry(id).or_insert((0, 0));
-        *nack += 1;
-        self.graph
-            .update_node_pdr(id, *nack as f32 / (*ack as f32 + *nack as f32) as f32);
+        let (ack, nack) = self.pdr.entry(id).or_insert((0.0, 0.0));
+        *nack += 1.0;
+        self.graph.update_node_pdr(id, *nack / (*ack + *nack));
     }
 
     pub fn nodes_ack(&mut self, header: SourceRoutingHeader) {
@@ -69,10 +68,9 @@ impl RoutingHandler {
             return;
         }
         for id in header.hops.iter() {
-            let (ack, nack) = self.pdr.entry(*id).or_insert((0, 0));
-            *ack += 1;
-            self.graph
-            .update_node_pdr(*id, *nack as f32 / (*ack as f32 + *nack as f32) as f32);
+            let (ack, nack) = self.pdr.entry(*id).or_insert((0.0, 0.0));
+            *ack += 1.0;
+            self.graph.update_node_pdr(*id, *nack / (*ack + *nack));
         }
     }
 
@@ -86,13 +84,16 @@ impl RoutingHandler {
             return;
         }
         for id in header.hops.iter() {
-            let congestion = self.congestion.entry(*id).or_insert(0);
-            *congestion += 1;
+            let congestion = self.congestion.entry(*id).or_insert(0.0);
+            *congestion += 1.0;
         }
-        let max = *self.congestion.values().max().unwrap();
+        let max = *self
+            .congestion
+            .values()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
         for (key, value) in self.congestion.iter_mut() {
-            self.graph
-                .update_node_congestion(*key, *value as f32 / max as f32);
+            self.graph.update_node_congestion(*key, *value / max);
         }
     }
 
@@ -104,7 +105,7 @@ impl RoutingHandler {
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
             Ok(header) => Some(header),
-            Err(e) => None,
+            Err(e) => None
         }
     }
 }
