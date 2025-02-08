@@ -40,13 +40,12 @@ fn main() {
     };
     routing.update_graph(flood);
 
-    match routing.best_path(0, 9){
+    match routing.best_path(0, 9) {
         Some(path) => {
             println!("Best path: {:?}", path);
-        },
+        }
         None => {
             println!("No path found");
         }
     }
-
 }

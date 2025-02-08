@@ -1,5 +1,8 @@
 use crate::graph::Graph;
-use std::{collections::HashMap, u64};
+use std::{
+    collections::{HashMap, HashSet},
+    u64,
+};
 use wg_internal::{
     network::{NodeId, SourceRoutingHeader},
     packet::FloodResponse,
@@ -63,6 +66,7 @@ impl RoutingHandler {
         self.graph.update_node_pdr(id, *nack / (*ack + *nack));
     }
 
+    /// Update the ack counter of the nodes for the pdr calculation
     pub fn nodes_ack(&mut self, header: SourceRoutingHeader) {
         if header.hops.is_empty() {
             return;
@@ -105,7 +109,12 @@ impl RoutingHandler {
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
             Ok(header) => Some(header),
-            Err(e) => None
+            Err(e) => None,
         }
+    }
+
+    /// Get a clone of the graph
+    pub fn get_graph(&self) -> HashMap<NodeId, HashSet<NodeId>> {
+        self.graph.graph.clone()
     }
 }
