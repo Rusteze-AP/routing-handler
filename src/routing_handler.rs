@@ -60,7 +60,8 @@ impl RoutingHandler {
     pub fn node_nack(&mut self, id: NodeId) {
         let (ack, nack) = self.pdr.entry(id).or_insert((0.0, 0.0));
         *nack += 1.0;
-        self.graph.update_node_pdr(id, *nack / (*ack + *nack));
+        self.graph
+            .update_node_pdr(id, *nack/ (*ack + *nack ));
     }
 
     pub fn nodes_ack(&mut self, header: SourceRoutingHeader) {
@@ -70,7 +71,8 @@ impl RoutingHandler {
         for id in header.hops.iter() {
             let (ack, nack) = self.pdr.entry(*id).or_insert((0.0, 0.0));
             *ack += 1.0;
-            self.graph.update_node_pdr(*id, *nack / (*ack + *nack));
+            self.graph
+            .update_node_pdr(*id, *nack/ (*ack + *nack ));
         }
     }
 
@@ -87,13 +89,10 @@ impl RoutingHandler {
             let congestion = self.congestion.entry(*id).or_insert(0.0);
             *congestion += 1.0;
         }
-        let max = *self
-            .congestion
-            .values()
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
-            .unwrap();
+        let max = *self.congestion.values().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
         for (key, value) in self.congestion.iter_mut() {
-            self.graph.update_node_congestion(*key, *value / max);
+            self.graph
+                .update_node_congestion(*key, *value / max);
         }
     }
 
@@ -105,7 +104,10 @@ impl RoutingHandler {
     pub fn best_path(&mut self, start: NodeId, end: NodeId) -> Option<SourceRoutingHeader> {
         match self.graph.a_star_search(start, end) {
             Ok(header) => Some(header),
-            Err(e) => None
+            Err(e) =>{
+                println!("calculating error: {}", e);
+                return None;
+            }
         }
     }
 }
