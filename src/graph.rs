@@ -80,7 +80,6 @@ impl Graph {
     pub fn clear(&mut self) {
         self.nodes.clear();
         self.graph.clear();
-        
     }
 
     pub fn add_node(&mut self, id: NodeId, node_type: NodeType) {
@@ -95,14 +94,14 @@ impl Graph {
         self.graph.entry(n2).or_insert_with(HashSet::new).insert(n1);
     }
 
-    pub fn get_node_weight(&self, id: NodeId) -> (f32,f32) {
+    pub fn get_node_weight(&self, id: NodeId) -> (f32, f32) {
         if let Some(node) = self.nodes.get(&id) {
             return (node.pdr, node.congestion);
         }
-        (0.0,0.0)
+        (0.0, 0.0)
     }
 
-    pub fn update_node_weight(&mut self, id: NodeId, weight: (f32,f32)) {
+    pub fn update_node_weight(&mut self, id: NodeId, weight: (f32, f32)) {
         if let Some(node) = self.nodes.get_mut(&id) {
             node.pdr = weight.0;
             node.congestion = weight.1;
@@ -164,7 +163,7 @@ impl Graph {
             }
 
             for neighbor in self.graph[&current.id].iter() {
-                if *neighbor != end && self.nodes[neighbor].node_type != NodeType::Drone  {
+                if *neighbor != end && self.nodes[neighbor].node_type != NodeType::Drone {
                     continue;
                 }
                 let tentative_g_score = g_score[&current.id] + self.nodes[neighbor].get_weight();
